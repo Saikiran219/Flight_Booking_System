@@ -19,7 +19,7 @@ namespace EStore.Infrastructure.Repositories
         }
 
 
-        public void SendMailNotification(string toEmail, string subject, string body)
+        public  async Task SendMailNotification(string toEmail, string subject, string body)
         {
             // Validate the email address
             if (string.IsNullOrWhiteSpace(toEmail) || !IsValidEmail(toEmail))

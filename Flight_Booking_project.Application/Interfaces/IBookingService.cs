@@ -12,8 +12,8 @@ namespace Flight_Booking_project.Application.Interfaces
     {
         Task<BookingResult> ConfirmBookingAsync(BookingRequestDto bookingRequestDto);
         Task<BookingResponseDto> CancelBookingAsync(int bookingId);
-        Task<IEnumerable<BookingsByUser>> GetBookingsByUserIdAsync(int userId);
-        Task<MemoryStream> GenerateBookingTicket(int bookingId);
+        Task<IEnumerable<BookingsByUser>> GetBookingsByUserIdAsync(string userId);
+        Task<(decimal TotalCost, byte[] PdfData)> GenerateBookingTicket(int bookingId);
         Task<decimal> GetTotalCostAsync(int bookingId);
 
     }

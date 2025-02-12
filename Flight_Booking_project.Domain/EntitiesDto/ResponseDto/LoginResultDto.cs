@@ -8,7 +8,7 @@ namespace Flight_Booking_project.Domain.EntitiesDto.ResponseDto
 {
     public class LoginResultDto
     {
-        public string Token { get; set; }
-        public int UserId { get; set; } // Adjust type as necessary
+        public string? Token { get; set; }
+        public string? UserId { get; set; } // Adjust type as necessary
     }
 }

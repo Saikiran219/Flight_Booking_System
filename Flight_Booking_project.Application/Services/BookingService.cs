@@ -37,46 +37,6 @@ namespace FlightBookingSystem.Application.Services
             
         }
 
-
-        /* public async Task<BookingResult> ConfirmBookingAsync(BookingRequestDto bookingRequestDto)
-         {
-             var flight = await _flightRepository.GetFlightByIdAsync(bookingRequestDto.FlightId);
-
-             if (flight == null)
-             {
-                 return new BookingResult { IsSuccess = false, Message = "Flight not found" };
-             }
-
-             var booking = _mapper.Map<Booking>(bookingRequestDto);
-             booking.FlightId = flight.FlightId;
-             booking.IsPaid = bookingRequestDto.IsPaid;
-             booking.BookingDate = bookingRequestDto.BookingDate;
-
-             var savedBooking = await _bookingRepository.AddBookingAsync(booking);
-
-
-           var bookingresult= new BookingResult
-             {
-                 IsSuccess = true,
-                 Message = "Booking confirmed successfully",
-                 Booking = savedBooking,
-                 IsPaid = savedBooking.IsPaid
-             };
-
-             if(bookingresult.IsSuccess==true)
-             {
-                 var user=await _userRepository.GetUserByIdAsync(bookingRequestDto.UserId);
-
-                 var emailBody = await _emailService.GenerateEmailBody(bookingRequestDto);
-
-                 _emailService.SendEmailNotification(user.Email, "Flight Booking Confirmation", emailBody);
-
-             }
-             return bookingresult;
-
-
-         }*/
-
         public async Task<BookingResult> ConfirmBookingAsync(BookingRequestDto bookingRequestDto)
         {
             // Get the flight details
@@ -145,19 +105,14 @@ namespace FlightBookingSystem.Application.Services
             // If booking is successful, send email
             if (bookingResult.IsSuccess)
             {
-                var user = await _userRepository.GetUserByIdAsync(bookingRequestDto.UserId);
+                var user = await _userRepository.GetUserByIdAsync(bookingRequestDto?.UserId??"");
                 var emailBody = await _emailService.GenerateEmailBody(bookingRequestDto);
-                _emailService.SendEmailNotification(user.Email, "Flight Booking Confirmation", emailBody);
+                _emailService.SendEmailNotification(user.Email??"", "Flight Booking Confirmation", emailBody);
             }
 
             return bookingResult;
         }
-
-
-
-
-
-        public async Task<IEnumerable<BookingsByUser>> GetBookingsByUserIdAsync(int userId)
+        public async Task<IEnumerable<BookingsByUser>> GetBookingsByUserIdAsync(string userId)
 
         {
             var bookings = await _bookingRepository.GetBookingsByUserIdAsync(userId);
@@ -169,23 +124,23 @@ namespace FlightBookingSystem.Application.Services
                 var bookingDto = _mapper.Map<BookingsByUser>(booking);
 
                 // Populate the seats for the booking
-                bookingDto.Seats = booking.Passengers
+                bookingDto.Seats = booking.Passengers  
                     .Where(p => p.Seat != null) // Ensure seat exists
                     .Select(p => new BookingSeatDto
                     {
-                        Price = p.Seat.Price, // Assuming your Seat has a Price property
-                        SeatNumber = p.Seat.SeatNumber,
-                        SeatPosition = p.Seat.Position // Assuming your Seat has a SeatPosition property
+                        Price = p?.Seat?.Price??0, // Assuming your Seat has a Price property
+                        SeatNumber = p?.Seat?.SeatNumber?? "",
+                        SeatPosition = p?.Seat?.Position ?? ""// Assuming your Seat has a SeatPosition property
                     }).ToList();
+                bookingDto.TotalPrice = bookingDto.Seats.Sum(seat => seat.Price);
 
-                bookingDto.PassengerCount = booking.Passengers.Count;
+                bookingDto.PassengerCount = booking?.Passengers.Count ?? 0;
               //  bookingDto.TotalCost = await GetTotalCostAsync(booking.BookingId); // Assume you have BookingId in booking
                 bookingsByUser.Add(bookingDto);
             }
             return bookingsByUser;
 
         }
-
         public async Task<BookingResponseDto> CancelBookingAsync(int bookingId)
         {
             var isCancelled = await _bookingRepository.CancelBookingAsync(bookingId);
@@ -210,8 +165,7 @@ namespace FlightBookingSystem.Application.Services
                 StatusId = booking.StatusId
             };
         }
-
-        public async Task<MemoryStream> GenerateBookingTicket(int bookingId)
+        public async Task<(decimal TotalCost, byte[] PdfData)> GenerateBookingTicket(int bookingId)
         {
             // Get the booking from the repository
             var booking = await _bookingRepository.GetBookingByIdAsync(bookingId);
@@ -328,7 +282,7 @@ namespace FlightBookingSystem.Application.Services
 
             // Reset stream position before returning it
             stream.Position = 0;
-            return stream;
+            return (totalCost, stream.ToArray());
         }
         public async Task<decimal> GetTotalCostAsync(int bookingId)
         {

@@ -87,7 +87,7 @@ namespace Flight_Booking_project.Infrastructure.Repository
 
 
 
-        public async Task<IEnumerable<Booking>> GetBookingsByUserIdAsync(int userId)
+        public async Task<IEnumerable<Booking>> GetBookingsByUserIdAsync(string userId)
         {
             var bookings = await _context.Bookings
                 .Where(b => b.UserId == userId)

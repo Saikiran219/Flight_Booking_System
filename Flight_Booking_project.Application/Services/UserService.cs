@@ -3,125 +3,113 @@ using Flight_Booking_project.Application.Interfaces;
 using Flight_Booking_project.Application.IRepository;
 using Flight_Booking_project.Domain.Entities;
 using Flight_Booking_project.Domain.EntitiesDto;
+using Flight_Booking_project.Domain.EntitiesDto.ResponseDto;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Authorization;
-using System.Web.Http;
-using Microsoft.AspNetCore.Mvc;
-using Flight_Booking_project.Domain.EntitiesDto.ResponseDto;
 
 public class UserService : IUserService
 {
-    private readonly IUserRepository _userRepository;
+   
     private readonly IConfiguration _configuration;
     private readonly IMapper _mapper;
+    private readonly UserManager<User> _userManager;
+    private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly SignInManager<User> _signInManager;
 
-    public UserService(IUserRepository userRepository, IConfiguration configuration, IMapper mapper)
+    public UserService(IUserRepository userRepository, IConfiguration configuration, IMapper mapper, UserManager<User> userManager,
+        SignInManager<User> signInManager, RoleManager<IdentityRole> roleManager)
     {
-        _userRepository = userRepository;
+      
         _configuration = configuration;
         _mapper = mapper;
+        _userManager = userManager;
+        _signInManager = signInManager;
+        _roleManager = roleManager;
     }
     public async Task<UserDto> RegisterAsync(RegisterDto registerDto)
     {
-        var existingUser = await _userRepository.GetUserByEmailAsync(registerDto.Email);
+        var existingUser = await _userManager.FindByEmailAsync(registerDto?.Email??"");
         if (existingUser != null)
         {
             throw new Exception("User already exists");
         }
 
-        var user = _mapper.Map<User>(registerDto);
-        user.Password = registerDto.Password; // Store the password directly
-
-        // Save the user to the repository
-        await _userRepository.RegisterUserAsync(user);
-
-        // Verify the user was saved
-        var savedUser = await _userRepository.GetUserByEmailAsync(user.Email);
-        if (savedUser == null)
+        var user = new User
         {
-            throw new Exception("User registration failed, user not found.");
+            UserName = registerDto?.Name??"",
+            Email = registerDto?.Email ?? "",
+            PhoneNumber = registerDto?.PhoneNumber??"",
+            Address = registerDto?.Address??"",
+            AlternativeContactNumber = registerDto?.AlternativeContactNumber
+        };
+        var result = await _userManager.CreateAsync(user, registerDto?.Password??"");
+        if (!result.Succeeded)
+        {
+            throw new Exception("User registration failed: " + string.Join(", ", result.Errors.Select(e => e.Description)));
         }
 
-        return _mapper.Map<UserDto>(savedUser);
+        var roleExists = await _roleManager.RoleExistsAsync("User");
+        if (!roleExists)
+        {
+            // If the role doesn't exist, create it
+            await _roleManager.CreateAsync(new IdentityRole("User"));
+        }
+
+        // Assign the "User" role to the newly registered user
+        await _userManager.AddToRoleAsync(user, "User");
+
+        return _mapper.Map<UserDto>(user);
     }
-
-
-    private async Task<User> AuthenticateUser(UserDto user)
-    {
-        User authenticatedUser = null;
-
-        try
-        {
-            var userEntity = await _userRepository.GetUserByEmailAsync(user.Email);
-
-            if (userEntity != null && user.Password == userEntity.Password) // Ensure to compare passwords securely
-            {
-                authenticatedUser = userEntity; // Return User entity
-            }
-        }
-        catch (Exception ex)
-        {
-            throw new UnauthorizedAccessException("Invalid credentials");
-        }
-        return authenticatedUser; // Return User entity
-    }
-
-
-    private async Task<string> GenerateToken(UserDto user)
+    private async Task<string> GenerateToken(User user)
     {
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+        var roles = await _userManager.GetRolesAsync(user);
+        var roleClaims = roles.Select(role => new Claim(ClaimTypes.Role, role)).ToList();
 
         var claims = new[]
         {
     new Claim(JwtRegisteredClaimNames.Sub, user.Email),
     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-  };
+  }.Concat(roleClaims).ToArray(); ;
 
         var token = new JwtSecurityToken(
             _configuration["Jwt:Issuer"],
             _configuration["Jwt:Audience"],
-            claims,
+            claims: claims,
             expires: DateTime.Now.AddMinutes(30),
             signingCredentials: credentials
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
-
-
-    public async Task<LoginResultDto> LoginAsync(UserDto user)
+    public async Task<LoginResultDto> LoginAsync(UserDto userDto)
     {
-        LoginResultDto loginResult = null;
-
-        try
-        {
-            var authenticatedUser = await AuthenticateUser(user);
-            if (authenticatedUser != null)
-            {
-                var token = await GenerateToken(new UserDto { Email = authenticatedUser.Email });
-                loginResult = new LoginResultDto
-                {
-                    Token = token,
-                    UserId = authenticatedUser.UserId // Get UserId from authenticatedUser
-                };
-            }
-        }
-        catch (Exception e)
+        var user = await _userManager.FindByEmailAsync(userDto?.Email??"");
+        if (user == null)
         {
             throw new UnauthorizedAccessException("Invalid credentials");
         }
 
-        return loginResult; // Return LoginResultDto
+        var result = await _signInManager.PasswordSignInAsync(user, userDto?.Password, false, false);
+        if (!result.Succeeded)
+        {
+            throw new UnauthorizedAccessException("Invalid credentials");
+        }
+        var token = await GenerateToken(user);
+
+        return new LoginResultDto
+        {
+            Token = token,
+            UserId = user.Id // Return UserId from custom User class
+        };
+
+      
     }
-
-
     public async Task<RegisterDto> GetUserByEmail(RegisterDto registerDto)
     {
         if (string.IsNullOrEmpty(registerDto.Email))
@@ -129,7 +117,7 @@ public class UserService : IUserService
             return null; // Or handle as appropriate for invalid email
         }
 
-        var user = await _userRepository.GetUserByEmailAsync(registerDto.Email); // Fetch user from repository
+        var user = await _userManager.FindByEmailAsync(registerDto.Email);
 
         if (user == null)
         {
@@ -139,20 +127,67 @@ public class UserService : IUserService
         // Map User entity to UserDto
         return new RegisterDto
         {
-            Name = user.Name,
+            Name = user.UserName,
             Email = user.Email,
-            Password = user.Password,
             Address = user.Address,
             PhoneNumber = user.PhoneNumber,
             Gender = user.Gender,
             AlternativeContactNumber = user.AlternativeContactNumber
         };
     }
-
-    public Task<string> GeneratePasswordResetToken(UserDto user)
+    public async Task<string> GeneratePasswordResetToken(UserDto userDto)
     {
-        var token = GenerateToken(user);
-        return token;
+        var user = await _userManager.FindByEmailAsync(userDto?.Email??"");
+        if (user == null)
+        {
+            throw new UnauthorizedAccessException("User not found");
+        }
+
+        // Generate password reset token
+        var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+        return resetToken; // Return token for password reset
+    }
+    public async Task CreateRoleAsync(string roleName)
+    {
+        var roleExists = await _roleManager.RoleExistsAsync(roleName);
+        if (!roleExists)
+        {
+            var role = new IdentityRole(roleName);
+            await _roleManager.CreateAsync(role);
+        }
+        else
+        {
+            throw new Exception("Role Already Exists");
+        }
+    }
+    public async Task AssignRoleToUserAsync(string userEmail, string roleName)
+    {
+        var user = await _userManager.FindByEmailAsync(userEmail);
+        if (user == null)
+        {
+            throw new Exception("User not found");
+        }
+
+        var roleExists = await _roleManager.RoleExistsAsync(roleName);
+        if (!roleExists)
+        {
+            throw new Exception("Role does not exist");
+        }
+        // Get all the roles the user is currently assigned to
+        var currentRoles = await _userManager.GetRolesAsync(user);
+
+        var removeRolesResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
+        if (!removeRolesResult.Succeeded)
+        {
+            throw new Exception("Failed to remove user from previous roles");
+        }
+
+        // Assign the user to the new role
+        var addRoleResult = await _userManager.AddToRoleAsync(user, roleName);
+        if (!addRoleResult.Succeeded)
+        {
+            throw new Exception("Failed to assign the new role");
+        }
     }
 }
  

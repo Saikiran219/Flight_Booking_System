@@ -11,18 +11,18 @@ namespace Flight_Booking_project.Domain.Entities
     {
         [Key]
         public int SeatId { get; set; }
-        public string SeatNumber { get; set; }
-        public string ClassType { get; set; } // e.g., Economy, Business
+        public string?SeatNumber { get; set; }
+        public string? ClassType { get; set; } // e.g., Economy, Business
         public bool IsAvailable { get; set; }
-        public string Position { get; set; }
+        public string? Position { get; set; }
         public decimal Price { get; set; }
 
 
         // A seat is related to a specific flight
         public int FlightId { get; set; }
-        public Flight Flight { get; set; }
+        public Flight? Flight { get; set; }
         // Passenger association (One-to-One)
-        public Passenger Passenger { get; set; }
+        public Passenger? Passenger { get; set; }
 
     }
 }

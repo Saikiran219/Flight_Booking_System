@@ -3,11 +3,13 @@ using EStore.Infrastructure.Repositories;
 using Flight_Booking_project.Application.Interfaces;
 using Flight_Booking_project.Application.IRepository;
 using Flight_Booking_project.Application.Services;
+using Flight_Booking_project.Domain.Entities;
 using Flight_Booking_project.Domain.EntitiesDto;
 using Flight_Booking_project.Infrastructure.Data;
 using Flight_Booking_project.Infrastructure.Repository;
 using FlightBookingSystem.Application.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -15,15 +17,32 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddDbContext<FlightBookingContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("EFCoreDBConnection"), b => b.MigrationsAssembly("Flight_Booking_project")));
 
-// Configure JWT Authentication
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services.AddIdentity<User, IdentityRole>(options =>
+{
+    options.Password.RequireDigit = false; // Require at least one digit.
+    options.Password.RequireLowercase = false; // Require at least one lowercase letter.
+    options.Password.RequireUppercase = false; // Require at least one uppercase letter.
+    options.Password.RequireNonAlphanumeric = false; // Require at least one non-alphanumeric character.
+    options.Password.RequiredLength = 8; // Minimum password length.
+    options.Password.RequiredUniqueChars = 1; // Require at least one unique character
+}).AddEntityFrameworkStores<FlightBookingContext>().AddDefaultTokenProviders();
+
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+})
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
+
             ValidateIssuer = true,
-            ValidateAudience = true,
+            ValidateAudience = false,
             ValidateLifetime = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
@@ -31,9 +50,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminPolicy", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("UserPolicy", policy => policy.RequireRole("User"));
+});
+
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddDbContext<FlightBookingContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("EFCoreDBConnection"),b=>b.MigrationsAssembly("Flight_Booking_project")));
+
 builder.Services.AddAutoMapper(typeof(FlightProfile).Assembly);
 
 builder.Services.AddScoped<IFlightRepository, FlightRepository>();
@@ -71,7 +99,8 @@ builder.Services.AddCors(options =>
         {
             builder.WithOrigins("http://localhost:3000")
                    .AllowAnyHeader()
-                   .AllowAnyMethod();
+                   .AllowAnyMethod()
+              .WithExposedHeaders("Total-Cost");
         });
 });
 /*builder.Services.AddControllers()

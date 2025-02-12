@@ -39,6 +39,7 @@ namespace Flight_Booking_project.Controllers
             return Ok(passengers);
         }
 
+
         [HttpDelete("DeletePassengerList/{bookingId}")]
         public async Task<IActionResult> DeletePassengersByBookingId(int bookingId)
         {
@@ -51,7 +52,6 @@ namespace Flight_Booking_project.Controllers
 
             return Ok(new { Message = "Passengers deleted successfully." });
         }
-
 
 
         [HttpDelete("DeletePassengers/{passengerId}")]
@@ -67,39 +67,7 @@ namespace Flight_Booking_project.Controllers
             return Ok(new { Message = result.Message });
         }
 
-
-
-
-        /* [Authorize]
-         [HttpPost("confirm")] 
-         public async Task<IActionResult> ConfirmBooking([FromBody] BookingRequestDto bookingRequestDto)
-         {
-             var bookingResult = await _bookingService.ConfirmBookingAsync(bookingRequestDto);
-
-             if (!bookingResult.IsSuccess)
-             {
-                 return BadRequest(new BookingResponseDto
-                 {
-                     IsSuccess = false,
-                     Message = bookingResult.Message
-                 });
-             }
-
-             var bookingDetailsDto = _mapper.Map<BookingDetailsDto>(bookingResult.Booking);
-
-
-
-             var response = new BookingResponseDto
-             {
-                 IsSuccess = bookingResult.IsSuccess,
-                 Message = bookingResult.Message,
-                 BookingDetails = bookingDetailsDto
-             };
-
-             return Ok(response);
-         }*/
-
-        [Authorize]
+      
         [HttpPost("confirm")]
         public async Task<IActionResult> ConfirmBooking([FromBody] BookingRequestDto bookingRequestDto)
         {
@@ -134,9 +102,8 @@ namespace Flight_Booking_project.Controllers
         }
 
       
-
         [HttpGet("user/{userId}/bookings")]
-        public async Task<IActionResult> GetBookingsByUserId(int userId)
+        public async Task<IActionResult> GetBookingsByUserId(string userId)
         {
             var bookings = await _bookingService.GetBookingsByUserIdAsync(userId);
             if (bookings == null || !bookings.Any())
@@ -170,13 +137,15 @@ namespace Flight_Booking_project.Controllers
                 BookingDetails = bookingResult.BookingDetails
             });
         }
+
+
         [HttpGet("DownloadTicket/{bookingId}")]
         public async Task<IActionResult> DownloadTicket(int bookingId)
         {
             try
             {
                 // Call the service method to generate the booking ticket
-                var pdfStream = await _bookingService.GenerateBookingTicket(bookingId);
+                var (totalCost, pdfStream) = await _bookingService.GenerateBookingTicket(bookingId);
 
                 if (pdfStream == null)
                 {
@@ -184,8 +153,10 @@ namespace Flight_Booking_project.Controllers
                 }
 
                 // Return the PDF as a downloadable file
-                pdfStream.Position = 0;
+               // pdfStream.Position = 0;
                 var fileName = $"BookingTicket_{bookingId}.pdf";
+                // Append the 'total-cost' header in lowercase
+                Response.Headers.Append("total-cost", totalCost.ToString("F2"));
                 return File(pdfStream, "application/pdf", fileName);
             }
             catch (Exception ex)
@@ -194,8 +165,6 @@ namespace Flight_Booking_project.Controllers
                 return BadRequest(ex.Message);
             }
         }
-
-
 
 
     }

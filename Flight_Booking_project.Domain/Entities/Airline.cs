@@ -11,12 +11,12 @@ namespace Flight_Booking_project.Domain.Entities
     {
         [Key]
         public int AirlineId { get; set; }
-        public string AirlineName { get; set; }
+        public string? AirlineName { get; set; }
         public decimal BaggageAllowance { get; set; }
 
         // One-to-many relationship with flights
-        public ICollection<Flight> Flights { get; set; }
+        public ICollection<Flight>? Flights { get; set; }
 
-        public ICollection<Airport> Airports { get; set; }
+        public ICollection<Airport>? Airports { get; set; }
     }
 }

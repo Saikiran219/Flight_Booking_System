@@ -1,16 +1,10 @@
-﻿using Flight_Booking_project.Application.IRepository;
-using Flight_Booking_project.Domain.Entities;
+﻿using Flight_Booking_project.Domain.Entities;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Flight_Booking_project.Infrastructure.Data
 {
-    public class FlightBookingContext : DbContext
+    public class FlightBookingContext : IdentityDbContext<User>
     {
         public FlightBookingContext(DbContextOptions<FlightBookingContext> options) : base(options) { }
         public DbSet<Airport> Airports { get; set; }
@@ -18,12 +12,13 @@ namespace Flight_Booking_project.Infrastructure.Data
         public DbSet<Airline> Airlines { get; set; }
         public DbSet<Stop> Stops { get; set; }
         public DbSet<Seat> Seats { get; set; }
-        public DbSet<User> Users { get; set; }
         public DbSet<Booking> Bookings { get; set; }
         public DbSet<Passenger> Passengers { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
             // One-to-many between Airline and Flight
             modelBuilder.Entity<Flight>()
                 .HasOne(f => f.Airline)

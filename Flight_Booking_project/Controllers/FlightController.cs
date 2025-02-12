@@ -1,6 +1,6 @@
 ﻿using Flight_Booking_project.Application.Interfaces;
-using Flight_Booking_project.Domain.Entities;
 using Flight_Booking_project.Domain.EntitiesDto.RequestDto;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Flight_Booking_project.Controllers
@@ -29,31 +29,7 @@ namespace Flight_Booking_project.Controllers
                 return BadRequest(new { Message = ex.Message });
             }
         }
-        /* [HttpGet("AdvanceFilterSearch")]
-         public async Task<IActionResult> SearchFlightsByAdvanceFilter( [FromQuery]decimal? MinPrice, [FromQuery] decimal? MaxPrice, [FromQuery] string? AirlineName, [FromQuery] int? NumberOfStops)
-         {
-             try
-             {
-                 var flights = await _flightService.SearchFlightsByAdvanceFilterAsync( MinPrice,  MaxPrice, AirlineName, NumberOfStops);
-                 return Ok(flights);
-             }
-             catch (Exception ex)
-             {
-                 return BadRequest(new { Message = ex.Message });
-             }
-         }*/
-
-        //[HttpGet("details/{id}")]
-        //public async Task<IActionResult> GetFlightById(int id)
-        //{
-        //    var flight = await _flightService.GetflightByIdAsync(id);
-        //    if (flight == null)
-        //    {
-        //        return NotFound();
-        //    }
-        //    return Ok(flight);
-        //}
-
+        
         [HttpGet("{flightId}")]
         public async Task<IActionResult> GetFlightDetails(int flightId)
         {
@@ -88,8 +64,8 @@ namespace Flight_Booking_project.Controllers
         }
 
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("delete-flight/{flightId}")]
-
         public async Task<IActionResult> DeleteFlight(int flightId)
 
         {
@@ -110,6 +86,8 @@ namespace Flight_Booking_project.Controllers
 
         }
 
+
+        [Authorize(Roles ="Admin")]
         [HttpGet("GetAllFlights")]
         public async Task<IActionResult> GetAllFlights()
         {
@@ -117,7 +95,7 @@ namespace Flight_Booking_project.Controllers
             return Ok(flights);
         }
 
-
+        [Authorize(Roles = "Admin")]
         [HttpPost("Add")]
         public async Task<IActionResult> AddFlight([FromBody] AddFlightDto addFlightDto)
         {
@@ -137,7 +115,7 @@ namespace Flight_Booking_project.Controllers
             }
         }
 
-
+        [Authorize(Roles = "Admin")]
         [HttpPut("UpdateFlightDetails")]
         public async Task<IActionResult> UpdateFlightDetails([FromBody] UpdateFlightDetailsDto updateFlightDetailsDto)
         {

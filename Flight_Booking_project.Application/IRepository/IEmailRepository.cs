@@ -8,6 +8,6 @@ namespace Flight_Booking_project.Application.IRepository
 {
     public interface IEmailRepository
     {
-        void SendMailNotification(string toEmail, string subject, string body);
+       Task SendMailNotification(string toEmail, string subject, string body);
     }
 }

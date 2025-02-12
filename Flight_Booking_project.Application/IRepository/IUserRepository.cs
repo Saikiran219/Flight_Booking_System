@@ -9,11 +9,7 @@ namespace Flight_Booking_project.Application.IRepository
 {
     public interface IUserRepository
     {
-        Task<User> GetUserByEmailAsync(string email);
-        Task<User> GetUserByIdAsync(int id);
-        Task<User> RegisterUserAsync(User user);
-        Task UpdateAsync(User user);
-        Task DeleteAsync(int id);
-        Task<User> UpdateUserPassword(User user);
+        Task<User> GetUserByIdAsync(string id);
+     
     }
 }

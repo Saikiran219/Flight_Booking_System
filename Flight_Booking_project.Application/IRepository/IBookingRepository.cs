@@ -19,7 +19,7 @@ namespace Flight_Booking_project.Application.IRepository
         Task<IEnumerable<Booking>> GetBookingsByFlightIdAsync(int flightId);
 
         Task<bool> CancelBookingAsync(int bookingId);
-        Task<IEnumerable<Booking>> GetBookingsByUserIdAsync(int userId);
+        Task<IEnumerable<Booking>> GetBookingsByUserIdAsync(string userId);
         Task<decimal> CalculateTotalCostAsync(int bookingId);
 
 

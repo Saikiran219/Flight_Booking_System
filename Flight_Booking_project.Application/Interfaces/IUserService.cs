@@ -1,6 +1,7 @@
 ﻿using Flight_Booking_project.Domain.Entities;
 using Flight_Booking_project.Domain.EntitiesDto;
 using Flight_Booking_project.Domain.EntitiesDto.ResponseDto;
+using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,5 +16,8 @@ namespace Flight_Booking_project.Application.Interfaces
         Task<LoginResultDto> LoginAsync(UserDto user);
         Task<RegisterDto> GetUserByEmail(RegisterDto registerDto);
         Task<string> GeneratePasswordResetToken(UserDto user);
+         Task CreateRoleAsync(string roleName);
+        Task AssignRoleToUserAsync(string userEmail, string roleName);
+      
     }
 }

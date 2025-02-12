@@ -1,16 +1,10 @@
 ﻿// AuthController.cs
 using Flight_Booking_project.Application.Interfaces;
-using Flight_Booking_project.Application.Services;
-using Flight_Booking_project.Domain.Entities;
 using Flight_Booking_project.Domain.EntitiesDto;
 using Flight_Booking_project.Domain.EntitiesDto.RequestDto;
 using Flight_Booking_project.Domain.EntitiesDto.ResponseDto;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Text;
-using System.Threading.Tasks;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -18,13 +12,14 @@ public class UserLoginController : ControllerBase
 {
     private readonly IUserService _userService;
     private readonly IPasswordRecoveryService _passwordRecoveryService;
-  //  private readonly UserManger 
+   
     public UserLoginController(IUserService userService, IPasswordRecoveryService passwordRecoveryService)
     {
         _userService = userService;
         _passwordRecoveryService = passwordRecoveryService;
     }
 
+    [AllowAnonymous]
     [HttpPost("Register")]
     public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
     {
@@ -76,17 +71,31 @@ public class UserLoginController : ControllerBase
         return Ok(user); // Return 200 OK with the user data
     }
 
+    [HttpPost("create-role")]
+    public async Task<IActionResult> CreateRole(string roleName)
+    {
+        await _userService.CreateRoleAsync(roleName);
+        return Ok(new { message = "Role created successfully" });
+    }
+
+    [HttpPost("assign-role")]
+    public async Task<IActionResult> AssignRoleToUser(string userEmail, string roleName)
+    {
+        await _userService.AssignRoleToUserAsync(userEmail, roleName);
+        return Ok(new { message = "Role assigned successfully" });
+    }
+
+
     [HttpPost("reset-password")]
-    //[HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordReq request)
     {
-        var result = await _passwordRecoveryService.ResetPasswordAsync(request.Email, request.Token, request.Password);
+        var (result,message) = await _passwordRecoveryService.ResetPasswordAsync(request.Email, request.Token, request.Password);
         if (result)
         {
-            return Ok(new { message = "Password has been reset successfully." });
+            return Ok(new { message });
         }
 
-        return BadRequest(new { message = "Invalid token or email." });
+        return BadRequest(new { message });
     }
 
 

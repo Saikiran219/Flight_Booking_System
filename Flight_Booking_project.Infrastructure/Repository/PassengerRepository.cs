@@ -3,11 +3,6 @@ using Flight_Booking_project.Application.IRepository;
 using Flight_Booking_project.Domain.EntitiesDto.ResponseDto;
 using Flight_Booking_project.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Flight_Booking_project.Infrastructure.Repository
 {

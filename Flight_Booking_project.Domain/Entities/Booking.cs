@@ -14,15 +14,15 @@ namespace Flight_Booking_project.Domain.Entities
         public bool IsPaid { get; set; }
 
         // Each booking is associated with one user
-        public int UserId { get; set; }
-        public User User { get; set; }
+        public string? UserId { get; set; }
+        public User? User { get; set; }
 
         //booking have multiple passengers
-        public ICollection<Passenger> Passengers { get; set; }
+        public ICollection<Passenger>? Passengers { get; set; }
 
         // Each booking is associated with a flight
         public int FlightId { get; set; }
-        public Flight Flight { get; set; }
+        public Flight? Flight { get; set; }
         public DateTime BookingDate { get; set; }
         public int StatusId { get; set; } = -1;
         public decimal TotalPrice {  get; set; }    
