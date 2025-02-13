@@ -53,13 +53,7 @@ namespace Flight_Booking_project.Application.Services
             {
                 throw new Exception("Departure or Arrival airport not found");
             }
-           /* _cachedArrivalAirportId=arrivalAirport.AirportId;
-            _cachedDepartureAirportId = departureAirport.AirportId;
-            _cachedClassType=ClassType;
-            _cacheddepatureDate = DepartureDate;
-*/
-
-            // Fetch flights based on the search criteria
+         
             var flights = await _flightRepository.SearchFlightsAsync(departureAirport.AirportId, arrivalAirport.AirportId, 
                 DepartureAirportName, ArrivalAirportName, ClassType, 
                 DepartureDate,  NumberOfPassengers);
@@ -72,6 +66,7 @@ namespace Flight_Booking_project.Application.Services
 
                 if (isAvailable)
                 {
+                   
                     availableFlights.Add(flight);
                 }
             }
@@ -83,7 +78,24 @@ namespace Flight_Booking_project.Application.Services
 
             // Map the flight data to FlightResponseDto
             var flightDtos = _mapper.Map<List<FlightResponseDto>>(availableFlights);
+            foreach (var flightDto in flightDtos)
+            {
+                // Get the price based on ClassType for each flight
+                var flight = availableFlights.FirstOrDefault(f => f.FlightId.ToString() == flightDto.FlightNumber);
+                if (flight != null)
+                {
+                    // Find the seat with the correct ClassType and map the price
+                    var seat = flight.Seats.FirstOrDefault(s => s.ClassType.Equals(ClassType, StringComparison.OrdinalIgnoreCase));
+                    if (seat != null)
+                    {
+                        flightDto.Price = seat.Price;
+                        flightDto.SeatClass = seat.ClassType?? "";
+                    }
+                }
+            }
+
             return flightDtos;
+           
         }
 
       /* public async Task<List<FlightResponseDto>> SearchFlightsByAdvanceFilterAsync(decimal? MinPrice, decimal? MaxPrice, string? AirlineName, int? NumberOfStops)
@@ -324,14 +336,17 @@ namespace Flight_Booking_project.Application.Services
             {
                 foreach (var seat in updateFlightDetailsDto.Seats)
                 {
-                    var existingSeat = flight.Seats.FirstOrDefault(s => s.SeatId == seat.SeatId); // Check by SeatId
-                    if (existingSeat != null)
+                    var existingSeats = flight.Seats.Where(s => s.ClassType == seat.ClassType).ToList();  // Check by SeatId
+                    if (existingSeats.Any()) // If there are any seats with this ClassType
                     {
-                        if (seat.Price.HasValue) existingSeat.Price = seat.Price.Value;
-                        if (seat.IsAvailable.HasValue) existingSeat.IsAvailable = seat.IsAvailable.Value;
-                        if (!string.IsNullOrEmpty(seat.ClassType)) existingSeat.ClassType = seat.ClassType;
-                        if (!string.IsNullOrEmpty(seat.Position)) existingSeat.Position = seat.Position;
-                        if (!string.IsNullOrEmpty(seat.SeatNumber)) existingSeat.SeatNumber = seat.SeatNumber;
+                        foreach (var existingSeat in existingSeats)
+                        {
+                            if (seat.Price.HasValue) existingSeat.Price = seat.Price.Value;
+                            if (seat.IsAvailable.HasValue) existingSeat.IsAvailable = seat.IsAvailable.Value;
+                            if (!string.IsNullOrEmpty(seat.ClassType)) existingSeat.ClassType = seat.ClassType;
+                            if (!string.IsNullOrEmpty(seat.Position)) existingSeat.Position = seat.Position;
+                            if (!string.IsNullOrEmpty(seat.SeatNumber)) existingSeat.SeatNumber = seat.SeatNumber;
+                        }
 
                     }
                     else

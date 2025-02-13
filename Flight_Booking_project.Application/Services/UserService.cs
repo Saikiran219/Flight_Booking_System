@@ -44,6 +44,7 @@ public class UserService : IUserService
             Email = registerDto?.Email ?? "",
             PhoneNumber = registerDto?.PhoneNumber??"",
             Address = registerDto?.Address??"",
+            Gender=registerDto?.Gender,
             AlternativeContactNumber = registerDto?.AlternativeContactNumber
         };
         var result = await _userManager.CreateAsync(user, registerDto?.Password??"");

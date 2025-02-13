@@ -1,11 +1,9 @@
 ﻿using AutoMapper;
 using Flight_Booking_project.Application.Interfaces;
-using Flight_Booking_project.Domain.Entities;
 using Flight_Booking_project.Domain.EntitiesDto.RequestDto;
 using Flight_Booking_project.Domain.EntitiesDto.ResponseDto;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Org.BouncyCastle.Pqc.Crypto.Lms;
 
 
 
@@ -26,6 +24,7 @@ namespace Flight_Booking_project.Controllers
             _mapper = mapper;
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpGet("Passengers/{bookingId}")]
         public async Task<IActionResult> GetPassengersByBookingId(int bookingId)
         {
@@ -40,6 +39,8 @@ namespace Flight_Booking_project.Controllers
         }
 
 
+        //not in use
+        [Authorize(Roles = "Admin,User")]
         [HttpDelete("DeletePassengerList/{bookingId}")]
         public async Task<IActionResult> DeletePassengersByBookingId(int bookingId)
         {
@@ -53,7 +54,8 @@ namespace Flight_Booking_project.Controllers
             return Ok(new { Message = "Passengers deleted successfully." });
         }
 
-
+        //not in use
+        [Authorize(Roles = "Admin,User")]
         [HttpDelete("DeletePassengers/{passengerId}")]
         public async Task<IActionResult> DeletePassenger(int passengerId)
         {
@@ -67,7 +69,7 @@ namespace Flight_Booking_project.Controllers
             return Ok(new { Message = result.Message });
         }
 
-      
+        [Authorize(Roles ="Admin,User")]
         [HttpPost("confirm")]
         public async Task<IActionResult> ConfirmBooking([FromBody] BookingRequestDto bookingRequestDto)
         {
@@ -101,7 +103,7 @@ namespace Flight_Booking_project.Controllers
             return Ok(response);
         }
 
-      
+        [Authorize(Roles = "Admin,User")]
         [HttpGet("user/{userId}/bookings")]
         public async Task<IActionResult> GetBookingsByUserId(string userId)
         {
@@ -113,7 +115,7 @@ namespace Flight_Booking_project.Controllers
             return Ok(bookings);
         }
 
-
+        [Authorize(Roles = "Admin,User")]
         [HttpDelete("cancel/{bookingId}")]
         public async Task<IActionResult> CancelBooking(int bookingId)
         {
@@ -138,7 +140,7 @@ namespace Flight_Booking_project.Controllers
             });
         }
 
-
+        [Authorize(Roles = "Admin,User")]
         [HttpGet("DownloadTicket/{bookingId}")]
         public async Task<IActionResult> DownloadTicket(int bookingId)
         {

@@ -53,6 +53,7 @@ public class UserLoginController : ControllerBase
         return Unauthorized("Invalid username or password.");
     }
 
+    [Authorize(Roles ="Admin,User")]
     [HttpGet("UserByEmail")]
     public async Task<IActionResult> GetUserByEmail([FromQuery] string email)
     {
@@ -71,6 +72,8 @@ public class UserLoginController : ControllerBase
         return Ok(user); // Return 200 OK with the user data
     }
 
+
+    [Authorize(Roles ="Admin")]
     [HttpPost("create-role")]
     public async Task<IActionResult> CreateRole(string roleName)
     {
@@ -78,6 +81,7 @@ public class UserLoginController : ControllerBase
         return Ok(new { message = "Role created successfully" });
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPost("assign-role")]
     public async Task<IActionResult> AssignRoleToUser(string userEmail, string roleName)
     {
